@@ -1,0 +1,11 @@
+*hexfmt.nvim.txt*                           A hex formatting plugin for neovim
+
+==============================================================================
+Table of contents                              *hexfmt.nvim-table-of-contents*
+
+1. Quick start                                        |hexfmt.nvim-quickstart|
+2. Configuration                                   |hexfmt.nvim-configuration|
+2. Usage                                                   |hexfmt.nvim-usage|
+
+==============================================================================
+1. Quick start                                        *hexfmt.nvim-quickstart*
