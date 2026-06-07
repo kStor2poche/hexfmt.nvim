@@ -15,7 +15,7 @@ function m.escape_line(line)
         line = line:lower()
     end
 
-    vim.notify("line after leading 0x removal & casing:"..line)
+    -- vim.notify("line after leading 0x removal & casing:"..line)
 
     if not line:is_unescaped_hex() then
         vim.notify("Error: text isn't a valid unescaped hex string", 4)
@@ -53,7 +53,7 @@ function m.unescape_line(line)
     if vim.g.hexfmt_prefix_on_unescape then
         unescaped = "0x"..unescaped
     end
-    vim.notify("unescaped after potential 0x prepend & casing:"..unescaped)
+    -- vim.notify("unescaped after potential 0x prepend & casing:"..unescaped)
 
     return unescaped
 end

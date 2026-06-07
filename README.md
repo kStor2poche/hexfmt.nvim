@@ -28,12 +28,11 @@
 > with `<Plug>HexfmtTweakSettings` or `:HexfmtTweakSettings` (latter is TODO)
 
 ## Roadmap
-- add option for padding incomplete words when swapping endionness
-- visual-line & visual-block support
-- commands for all the `<Plug>` keybinds
+- ~~visual-line &~~ visual-block support
+- ~~simply ignore stuff that's not correct hex rather throwing an error~~ &rarr; we \xcannot r\xeally guess what is hex and what isn't in an unesscaped hexstring so this is a no go &rarr; or at least we could do it for mixed escaped strings which could have its use (which entails converting non escaped ascii chars to hex (probably with utf-8 by default? or utf-8 only (the more I think about it the more it looks cumbersome to do in a minimalist language such as lua))) &rarr; we might be able to do it with a "simple" string:gsub or two
+    - though having a utility to turn the char under the cursor into its hex representation would also be cool and kinda in the scope of this plugin :3 &rarr; or just returning it ? &rarr; not trivial since unicode is a thing. I made it work for utf-8, should test on windows to see how things happen with utf16 and such
 - make it so that the keybind for `tweak\_settings`, if triggered in visual, restores the selection after it has been used
-- ~~simply ignore stuff that's not correct hex rather throwing an error~~ &rarr; we \xcannot r\xeally guess what is hex and what isn't in an unesscaped hexstring so this is a no go &rarr; or at least we could do it for mixed escaped strings which could have its use (which entails converting non escaped ascii chars to hex (probably with utf-8 by default? or utf-8 only (the more I think about it the more it looks cumbersome to do in a minimalist language such as lua)))
-    - though having a utility to turn the char under the cursor into its hex representation would also be cool and kinda in the scope of this plugin :3
+- commands for all the `<Plug>` keybinds
 - maybe separate validation and initialization steps
 - find a way to do lazy loading (according to the lazy.nvim spec?) &rarr; at least only expose functions through nvim commands and/or 
 - luarocks release??? (least important)

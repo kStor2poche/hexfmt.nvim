@@ -32,7 +32,7 @@ function m.swap_endianness()
         end
         table.insert(swapped_lines, swapped)
     end
-    vim.notify("swapped="..vim.inspect(swapped_lines))
+    -- vim.notify("swapped="..vim.inspect(swapped_lines))
     local buf = 0-- sel.reg[1][1][1] - 1
     local start_row = sel.reg[1][1][2] - 1
     local start_col = sel.reg[1][1][3] - 1
@@ -41,7 +41,9 @@ function m.swap_endianness()
     vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, swapped_lines)
     vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
     -- vim.api.nvim_win_set_cursor(0, {start_row + #swapped_lines, swapped_lines[#swapped_lines]:len() - 1})
-    vim.api.nvim_win_set_cursor(0, {start_row, start_col})
+    -- vim.notify("start_row="..start_row)
+    -- vim.notify("start_col="..start_col)
+    vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col})
 end
 
 ---Turns a hex selection (`0x` prefixed or not) into a sequence of `\x` prefixed bytes
@@ -57,7 +59,7 @@ function m.escape_sel()
     ---@type string[]
     local escaped_lines = {}
 
-    vim.notify("text="..vim.inspect(text))
+    -- vim.notify("text="..vim.inspect(text))
     for _, line in ipairs(text) do
         local escaped = esc.escape_line(line)
         if escaped == nil then
@@ -66,7 +68,7 @@ function m.escape_sel()
         end
         table.insert(escaped_lines, escaped)
     end
-    vim.notify("escaped="..vim.inspect(escaped_lines))
+    -- vim.notify("escaped="..vim.inspect(escaped_lines))
     local buf = 0-- sel.reg[1][1][1] - 1
     local start_row = sel.reg[1][1][2] - 1
     local start_col = sel.reg[1][1][3] - 1
@@ -75,7 +77,7 @@ function m.escape_sel()
     vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, escaped_lines)
     vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
     -- vim.api.nvim_win_set_cursor(0, {start_row + #swapped_lines, swapped_lines[#swapped_lines]:len() - 1})
-    vim.api.nvim_win_set_cursor(0, {start_row, start_col})
+    vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col}) -- why start_row + 1 ? idk
 end
 
 function m.unescape_sel()
@@ -90,7 +92,7 @@ function m.unescape_sel()
     ---@type string[]
     local unescaped_lines = {}
 
-    vim.notify("text="..vim.inspect(text))
+    -- vim.notify("text="..vim.inspect(text))
     for _, line in ipairs(text) do
         local unescaped = esc.unescape_line(line)
         if unescaped == nil then
@@ -100,7 +102,7 @@ function m.unescape_sel()
         table.insert(unescaped_lines, unescaped)
     end
 
-    vim.notify("unescaped="..vim.inspect(unescaped_lines))
+    -- vim.notify("unescaped="..vim.inspect(unescaped_lines))
     local buf = 0-- sel.reg[1][1][1] - 1
     local start_row = sel.reg[1][1][2] - 1
     local start_col = sel.reg[1][1][3] - 1
@@ -109,7 +111,7 @@ function m.unescape_sel()
     vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, unescaped_lines)
     vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
     -- vim.api.nvim_win_set_cursor(0, {start_row + #swapped_lines, swapped_lines[#swapped_lines]:len() - 1})
-    vim.api.nvim_win_set_cursor(0, {start_row, start_col})
+    vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col})
 end
 
 function m.hex_of_string()
