@@ -114,8 +114,43 @@ function m.unescape_sel()
     vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col})
 end
 
-function m.hex_of_string()
+function m.hex_encode()
     -- TODO - maybe a first shot at a function that works both in normal mode with what's under the cursor and in visual
+    -- visibly has to be done with map-operator (vim.o.operatorfunc/opfunc puis 'g@')
+    -- beware of :h forced-motion
+    --
+    -- like this but we actually need to pass a reference to the lua function smh instead of giving a proper lua function
+    -- ---@param motion_type string -- in "line", "char", "block"
+    -- vim.o.opfunc = function (motion_type)
+    --     vim.print("called with motion type " .. motion_type)
+    -- end
+    -- vim.api.nvim_feedkeys(vim.keycode("g@"), "x", false)
+
+    local sel = h.get_selection()
+    if sel == nil then
+        vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
+        return
+    end
+
+    ---[[@as table]]
+    local text = sel.text
+    ---@type string[]
+    local encoded_lines = {}
+
+    -- vim.notify("text="..vim.inspect(text))
+    for _, line in ipairs(text) do
+        local encoded = line:to_hex()
+        table.insert(encoded_lines, encoded)
+    end
+
+    local buf = 0-- sel.reg[1][1][1] - 1
+    local start_row = sel.reg[1][1][2] - 1
+    local start_col = sel.reg[1][1][3] - 1
+    local end_row = sel.reg[#sel.reg][2][2] - 1
+    local end_col = sel.reg[#sel.reg][2][3]
+    vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, encoded_lines)
+    vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
+    vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col})
 end
 
 -- setup function
@@ -129,10 +164,11 @@ function m.setup(opts)
 
         -- Set up a key mapping: use opts.keymap if provided
         local keymap = opts.keymap
+        vim.keymap.set({"n", "x"}, keymap.hex_encode or "<Plug>(HexfmtEncode)" , m.hex_encode, {desc="Encode string into hex sequence", silent=true})
         vim.keymap.set("x", keymap.swap_endianness or "<Plug>(HexfmtSwapEndianness)" , m.swap_endianness, {desc="Swap endianness", silent=true})
         vim.keymap.set("x", keymap.escape or "<Plug>(HexfmtEscape)" , m.escape_sel, {desc="Escape hex sequence", silent=true})
         vim.keymap.set("x", keymap.unescape or "<Plug>(HexfmtUnescape)" , m.unescape_sel, {desc="Unescape hex sequence", silent=true})
-        vim.keymap.set({"n","x"}, keymap.tweak_settings or "<Plug>(HexfmtTweakSettings)" , conf.tweak_settings, {desc="Tweak hexfmt.nvim settings", silent=true})
+        vim.keymap.set({"n", "x"}, keymap.tweak_settings or "<Plug>(HexfmtTweakSettings)" , conf.tweak_settings, {desc="Tweak hexfmt.nvim settings", silent=true})
 
         return conf.setup(opts)
     end

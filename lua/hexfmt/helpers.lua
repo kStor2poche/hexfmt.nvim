@@ -80,4 +80,15 @@ function string.is_unescaped_hex(s)
     return s:match("^%x*$") or not (s:len() % 2 == 0)
 end
 
+---@param s string
+---@return string
+function string.to_hex(s)
+    local s_len = s:len()
+    local hex_str = ""
+    for i=1, s_len do
+        hex_str = hex_str .. string.format("%02x", s:byte(i, i+1))
+    end
+    return hex_str
+end
+
 return m

@@ -20,6 +20,7 @@ m.config = {
         ---escape: string,
         ---unescape: string,
         ---tweak_settings: string,
+        ---hex_encode: string,
     ---},
 ---}
 ---Sets up the plugin
