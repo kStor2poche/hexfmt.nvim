@@ -165,9 +165,14 @@ function m.setup(opts)
         local keymap = opts.keymap
 
         vim.keymap.set({"n", "x"}, keymap.hex_encode or "<Plug>(HexfmtEncode)" , m.create_hex_encode_opfunc(), {desc="Encode string into hex sequence", silent=true})
-        -- TODO: see if a binding mode and/or method allows for plugging into O-PENDING ? (kind of like it looks like it's done when doing `dd`)
+        -- TODO: see if a binding mode and/or method allows for plugging into O-PENDING ? (kind of like it looks like it's done when doing `dd`) (preferably only with `g@`'s O-PENDING)
+        -- mapping with "o" works but binds on all operators :/ &rarr; and overrides the regular binding
         if keymap.generate_linewise_bindings then
-            vim.keymap.set({"n", "x"}, (keymap.hex_encode..keymap.hex_encode:sub(-1)) or "<Plug>(HexfmtEncodeLine)" , m.create_hex_encode_opfunc() .. '_', {desc="Encode string into hex sequence", silent=true})
+            local hex_encode_line = nil
+            if keymap.hex_encode then
+                hex_encode_line = keymap.hex_encode .. "<leader>"
+            end
+            vim.keymap.set("n", hex_encode_line or "<Plug>(HexfmtEncodeLine)" , m.create_hex_encode_opfunc() .. '_', {desc="Encode string into hex sequence", silent=true})
         end
 
         vim.keymap.set("x", keymap.swap_endianness or "<Plug>(HexfmtSwapEndianness)" , m.swap_endianness, {desc="Swap endianness", silent=true})

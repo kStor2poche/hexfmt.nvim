@@ -32,6 +32,8 @@ function m.setup(opts)
     opts = opts or {}
 
     -- Validate the config
+    vim.validate("keymap.generate_linewise_bindings", opts.keymap.generate_linewise_bindings, "boolean", true, "boolean")
+    vim.validate("keymap.hex_encode", opts.keymap.hex_encode, "string", true, "string")
     vim.validate("keymap.swap_endianness", opts.keymap.swap_endianness, "string", true, "string")
     vim.validate("keymap.escape", opts.keymap.escape, "string", true, "string")
     vim.validate("keymap.unescape", opts.keymap.unescape, "string", true, "string")
@@ -60,7 +62,8 @@ function m.setup(opts)
 end
 
 ---Tweaks hexfmt.nvim settings
----TODO: separate into separate functions with associated commands/keybinds
+---***TODO:*** separate into separate functions with associated commands/keybinds
+---***TODO:*** options for changing the output of hex.encode() and allow partial encoding (e.g. only for non-printable utf-8 chars)
 function m.tweak_settings()
     local choices = {
         "Select word size (current = "..vim.g.hexfmt_word_size..")", -- int
