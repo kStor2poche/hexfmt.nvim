@@ -32,7 +32,6 @@ function m.swap_endianness()
         end
         table.insert(swapped_lines, swapped)
     end
-    -- vim.notify("swapped="..vim.inspect(swapped_lines))
     local buf = 0-- sel.reg[1][1][1] - 1
     local start_row = sel.reg[1][1][2] - 1
     local start_col = sel.reg[1][1][3] - 1
@@ -40,9 +39,6 @@ function m.swap_endianness()
     local end_col = sel.reg[#sel.reg][2][3]
     vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, swapped_lines)
     vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
-    -- vim.api.nvim_win_set_cursor(0, {start_row + #swapped_lines, swapped_lines[#swapped_lines]:len() - 1})
-    -- vim.notify("start_row="..start_row)
-    -- vim.notify("start_col="..start_col)
     vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col})
 end
 
@@ -68,7 +64,6 @@ function m.escape_sel()
         end
         table.insert(escaped_lines, escaped)
     end
-    -- vim.notify("escaped="..vim.inspect(escaped_lines))
     local buf = 0-- sel.reg[1][1][1] - 1
     local start_row = sel.reg[1][1][2] - 1
     local start_col = sel.reg[1][1][3] - 1
@@ -76,7 +71,6 @@ function m.escape_sel()
     local end_col = sel.reg[#sel.reg][2][3]
     vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, escaped_lines)
     vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
-    -- vim.api.nvim_win_set_cursor(0, {start_row + #swapped_lines, swapped_lines[#swapped_lines]:len() - 1})
     vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col}) -- why start_row + 1 ? idk
 end
 
@@ -92,7 +86,6 @@ function m.unescape_sel()
     ---@type string[]
     local unescaped_lines = {}
 
-    -- vim.notify("text="..vim.inspect(text))
     for _, line in ipairs(text) do
         local unescaped = esc.unescape_line(line)
         if unescaped == nil then
@@ -102,7 +95,6 @@ function m.unescape_sel()
         table.insert(unescaped_lines, unescaped)
     end
 
-    -- vim.notify("unescaped="..vim.inspect(unescaped_lines))
     local buf = 0-- sel.reg[1][1][1] - 1
     local start_row = sel.reg[1][1][2] - 1
     local start_col = sel.reg[1][1][3] - 1
@@ -110,25 +102,20 @@ function m.unescape_sel()
     local end_col = sel.reg[#sel.reg][2][3]
     vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, unescaped_lines)
     vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
-    -- vim.api.nvim_win_set_cursor(0, {start_row + #swapped_lines, swapped_lines[#swapped_lines]:len() - 1})
     vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col})
 end
 
-function m.hex_encode()
-    -- TODO - maybe a first shot at a function that works both in normal mode with what's under the cursor and in visual
-    -- visibly has to be done with map-operator (vim.o.operatorfunc/opfunc puis 'g@')
-    -- beware of :h forced-motion
-    --
-    -- like this but we actually need to pass a reference to the lua function smh instead of giving a proper lua function
-    -- ---@param motion_type string -- in "line", "char", "block"
-    -- vim.o.opfunc = function (motion_type)
-    --     vim.print("called with motion type " .. motion_type)
-    -- end
-    -- vim.api.nvim_feedkeys(vim.keycode("g@"), "x", false)
 
-    local sel = h.get_selection()
+function m.create_hex_encode_opfunc()
+    vim.o.opfunc = "v:lua.require'hexfmt'.hex_encode"
+    return "g@"
+end
+
+--- encode selection in hex -- meant to be used as an :h opfunc
+function m.hex_encode(motion_type)
+    local sel = h.get_opfunc_selection(motion_type)
     if sel == nil then
-        vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
+        vim.api.nvim_feedkeys(vim.keycode("<esc>"), "n", false)
         return
     end
 
@@ -144,13 +131,25 @@ function m.hex_encode()
     end
 
     local buf = 0-- sel.reg[1][1][1] - 1
-    local start_row = sel.reg[1][1][2] - 1
-    local start_col = sel.reg[1][1][3] - 1
-    local end_row = sel.reg[#sel.reg][2][2] - 1
-    local end_col = sel.reg[#sel.reg][2][3]
-    vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, encoded_lines)
-    vim.api.nvim_feedkeys(vim.keycode("<esc>"), "x", false)
-    vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col})
+    if motion_type == "block" then
+        for i, subreg in ipairs(sel.reg) do
+            local start_row = subreg[1][2] - 1
+            local start_col = subreg[1][3] - 1
+            local end_row = subreg[2][2] - 1
+            local end_col = subreg[2][3]
+            vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, {encoded_lines[i]})
+        end
+        local start_row = sel.reg[1][1][2] - 1
+        local start_col = sel.reg[1][1][3] - 1
+        vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col}) -- FIXME: this somehow doesn't work...
+    else
+        local start_row = sel.reg[1][1][2] - 1
+        local start_col = sel.reg[1][1][3] - 1
+        local end_row = sel.reg[#sel.reg][2][2] - 1
+        local end_col = sel.reg[#sel.reg][2][3]
+        vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, encoded_lines)
+        vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col}) -- FIXME: this somehow doesn't work...
+    end
 end
 
 -- setup function
@@ -159,12 +158,18 @@ function m.setup(opts)
     if not vim.g.hexfmt_nvim_loaded then
         vim.g.hexfmt_nvim_loaded = true
 
-        -- Create the swap_endianness command
-        vim.api.nvim_create_user_command("SwapEndianness", m.swap_endianness, {})
+        -- Create the swap_endianness command ? (and others ?)
+        -- vim.api.nvim_create_user_command("SwapEndianness", m.swap_endianness, {})
 
         -- Set up a key mapping: use opts.keymap if provided
         local keymap = opts.keymap
-        vim.keymap.set({"n", "x"}, keymap.hex_encode or "<Plug>(HexfmtEncode)" , m.hex_encode, {desc="Encode string into hex sequence", silent=true})
+
+        vim.keymap.set({"n", "x"}, keymap.hex_encode or "<Plug>(HexfmtEncode)" , m.create_hex_encode_opfunc(), {desc="Encode string into hex sequence", silent=true})
+        -- TODO: see if a binding mode and/or method allows for plugging into O-PENDING ? (kind of like it looks like it's done when doing `dd`)
+        if keymap.generate_linewise_bindings then
+            vim.keymap.set({"n", "x"}, (keymap.hex_encode..keymap.hex_encode:sub(-1)) or "<Plug>(HexfmtEncodeLine)" , m.create_hex_encode_opfunc() .. '_', {desc="Encode string into hex sequence", silent=true})
+        end
+
         vim.keymap.set("x", keymap.swap_endianness or "<Plug>(HexfmtSwapEndianness)" , m.swap_endianness, {desc="Swap endianness", silent=true})
         vim.keymap.set("x", keymap.escape or "<Plug>(HexfmtEscape)" , m.escape_sel, {desc="Escape hex sequence", silent=true})
         vim.keymap.set("x", keymap.unescape or "<Plug>(HexfmtUnescape)" , m.unescape_sel, {desc="Unescape hex sequence", silent=true})

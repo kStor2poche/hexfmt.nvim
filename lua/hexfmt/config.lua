@@ -16,6 +16,7 @@ m.config = {
     ---default_prefix_on_unescape: boolean,
     ---default_pad_incomplete_words: boolean,
     ---keymap: {
+        ---generate_linewise_bindings: boolean,
         ---swap_endianness: string,
         ---escape: string,
         ---unescape: string,

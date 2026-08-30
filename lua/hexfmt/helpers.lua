@@ -11,8 +11,6 @@ function m.get_selection(move)
         if mode == "v" then
             local selected_region = vim.fn.getregionpos(vis_start, vis_end)
             local selected_text = vim.fn.getregion(vis_start, vis_end)
-            -- vim.notify("selected_text:"..selected_text[1])
-            -- vim.notify("selected_region:"..vim.inspect(selected_region))
             return {
                 reg = selected_region,
                 text = selected_text,
@@ -23,14 +21,10 @@ function m.get_selection(move)
                 vis_start = vis_end
                 vis_end = tmp
             end
-            -- vim.notify("vis_start[2]:"..vis_start[2])
-            -- vim.notify("vis_end[2]:"..vis_end[2])
             local lines = vim.api.nvim_buf_get_lines(0, vis_start[2] - 1, vis_end[2], true)
-            -- vim.notify("lines: "..vim.inspect(lines))
             vis_start = {vis_start[1], vis_start[2], 1, vis_start[4]}
             vis_end = {vis_end[1], vis_end[2], lines[#lines]:len(), vis_end[4]}
             local selected_region = vim.fn.getregionpos(vis_start, vis_end)
-            -- vim.notify("selected_region: "..vim.inspect(selected_region))
             return {
                 reg = selected_region,
                 text = lines,
@@ -43,16 +37,55 @@ function m.get_selection(move)
     return nil
 end
 
----Whether or not char `c` matches PCRE2 `^[0-9a-zA-Z]$`
+---Get selected text from opfunc
+---@param motion_type "char" | "line" | "block" | nil
+---@return {reg: [[number, number, number, number], [number, number, number, number]][], text: string[]} | nil
+function m.get_opfunc_selection(motion_type)
+    local sel_start = vim.fn.getpos("'[")
+    local sel_end = vim.fn.getpos("']")
+    if motion_type == "char" then
+        local selected_region = vim.fn.getregionpos(sel_start, sel_end)
+        local selected_text = vim.fn.getregion(sel_start, sel_end)
+        return {
+            reg = selected_region,
+            text = selected_text,
+        }
+    elseif motion_type == "line" then
+        local lines = vim.api.nvim_buf_get_lines(0, sel_start[2] - 1, sel_end[2], true)
+        sel_start = {sel_start[1], sel_start[2], 1, sel_start[4]}
+        sel_end = {sel_end[1], sel_end[2], lines[#lines]:len(), sel_end[4]}
+        local selected_region = vim.fn.getregionpos(sel_start, sel_end)
+        return {
+            reg = selected_region,
+            text = lines,
+        }
+    elseif motion_type == "block" then
+        local full_lines = vim.api.nvim_buf_get_lines(0, sel_start[2] - 1, sel_end[2], true)
+        local lines = {}
+        for _, line in ipairs(full_lines) do
+            table.insert(lines, line:sub(sel_start[3], sel_end[3]))
+        end
+        local selected_region = vim.fn.getregionpos(sel_start, sel_end, {type = vim.keycode("<C-v>" .. sel_end[3] - sel_start[3] + 1)})
+        return {
+            reg = selected_region,
+            text = lines,
+        }
+    else
+        vim.notify("Error: unknown opfunc motion_type: ".. vim.inspect(motion_type) ..".", 4)
+        return nil
+    end
+end
+
+---Whether or not char `c` matches PCRE2 `^[0-9a-fA-F]$`
 ---@param c number
 ---@return boolean
 local function is_hex(c)
-    return (65 <= c and c <= 90)  -- A-Z
-        or (97 <= c and c <= 122) -- a-z
+    return (65 <= c and c <= 70)  -- A-F
+        or (97 <= c and c <= 102) -- a-f
         or (48 <= c and c <= 57)  -- 0-9
 end
 
----Whether or not `s` matches PCRE2 `^(\\x[0-9a-zA-Z]{2})*$`
+---Whether or not `s` matches PCRE2 `^(\\x[0-9a-fA-F]{2})*$`
 ---@param s string
 ---@return boolean
 function string.is_escaped_hex(s)
@@ -67,11 +100,6 @@ function string.is_escaped_hex(s)
             and s:sub(i, i+1) == "\\x"
             and is_hex(s:byte(i+2))
             and is_hex(s:byte(i+3))
-        -- vim.notify("valid is "..vim.inspect(valid).." at i="..vim.inspect(i))
-        -- vim.notify("s:sub(i,i+1) == \"\\x\": "..vim.inspect(s:sub(i, i+1) == "\\x"))
-        -- vim.notify("is_hex(i+2): "..vim.inspect(is_hex(s:byte(i+2))))
-        -- vim.notify("is_hex(i+3): "..vim.inspect(is_hex(s:byte(i+3))))
-
     end
     return valid
 end
