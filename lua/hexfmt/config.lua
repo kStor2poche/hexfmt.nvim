@@ -2,19 +2,20 @@ local m = {}
 
 ---@type HexfmtOpts
 m.config = {
-    default_word_size = 8,
-    default_casing = "conserve",
-    default_prefix_on_unescape = true,
-    default_pad_incomplete_words = true,
+    word_size = 8,
+    casing = "conserve",
+    prefix_on_unescape = true,
+    pad_incomplete_words = true,
+    generate_linewise_bindings = false,
     keymap = {
     },
 }
 
 ---@alias HexfmtOpts {
-    ---default_word_size: integer,
-    ---default_casing: "lower"|"upper"|"conserve",
-    ---default_prefix_on_unescape: boolean,
-    ---default_pad_incomplete_words: boolean,
+    ---word_size: integer,
+    ---casing: "lower"|"upper"|"conserve",
+    ---prefix_on_unescape: boolean,
+    ---pad_incomplete_words: boolean,
     ---keymap: {
         ---generate_linewise_bindings: boolean,
         ---swap_endianness: string,
@@ -39,26 +40,26 @@ function m.setup(opts)
     vim.validate("keymap.unescape", opts.keymap.unescape, "string", true, "string")
     vim.validate("keymap.tweak_settings", opts.keymap.tweak_settings, "string", true, "string")
     vim.validate("word_size",
-        opts.default_word_size,
+        opts.word_size,
         function(w) return type(w) == "number" and w >= 2 end,
         true,
         "number"
     )
     vim.validate("casing",
-        opts.default_casing,
+        opts.casing,
         function(c) return c == "lower" or c == "upper" or c == "conserve" end,
         true,
         "\"lower\" or \"upper\" or \"conserve\""
     )
-    vim.validate("prefix_on_unescape", opts.default_prefix_on_unescape, "boolean", true, "boolean")
-    vim.validate("pad_incomplete_words", opts.default_pad_incomplete_words, "boolean", true, "boolean")
+    vim.validate("prefix_on_unescape", opts.prefix_on_unescape, "boolean", true, "boolean")
+    vim.validate("pad_incomplete_words", opts.pad_incomplete_words, "boolean", true, "boolean")
 
     -- Setup config
     m.config = vim.tbl_extend('force', m.config, opts)
-    vim.g.hexfmt_word_size = m.config.default_word_size
-    vim.g.hexfmt_casing = m.config.default_casing
-    vim.g.hexfmt_prefix_on_unescape = m.config.default_prefix_on_unescape
-    vim.g.hexfmt_pad_incomplete_words = m.config.default_pad_incomplete_words
+    vim.g.hexfmt_word_size = m.config.word_size
+    vim.g.hexfmt_casing = m.config.casing
+    vim.g.hexfmt_prefix_on_unescape = m.config.prefix_on_unescape
+    vim.g.hexfmt_pad_incomplete_words = m.config.pad_incomplete_words
 end
 
 ---Tweaks hexfmt.nvim settings
@@ -71,6 +72,7 @@ function m.tweak_settings()
         "Toggle prepend `0x` on unescape (current = "..vim.inspect(vim.g.hexfmt_prefix_on_unescape)..")", -- bool
         "Toggle pad incomplete words (current = "..vim.inspect(vim.g.hexfmt_pad_incomplete_words)..")", -- bool
     }
+    -- TODO: look deeper into options for better UX, we might be able to do fancy things :)
     vim.ui.select(choices,
     {
         prompt = "Which setting do you want to change for this session?"
@@ -81,13 +83,13 @@ function m.tweak_settings()
             vim.ui.input(
                 {prompt="Set word size (vim.g.hexfmt_word_size)"},
                 function (input)
-                    local parsed = tonumber(input)
-                    if parsed == nil then
-                        vim.notify("Invalid value. Word size, should be an integer >= 2", 4)
+                    if input == nil then -- ignore aborted input
                         return
                     end
-                    if parsed < 2 then
-                        vim.notify("Invalid value. Word size, should be an integer >= 2", 4)
+
+                    local parsed = tonumber(input)
+                    if parsed == nil or parsed < 2 then
+                        vim.notify("Invalid value. Word size should be an integer >= 2", 4)
                         return
                     end
                     vim.g.hexfmt_word_size = parsed

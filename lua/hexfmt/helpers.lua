@@ -1,44 +1,10 @@
 local m = {}
-
----Get selected text from either movement or visual selection
----@param move string | nil
----@return {reg: [[number, number, number, number], [number, number, number, number]][], text: string[]} | nil
-function m.get_selection(move)
-    if not move then -- get visual selection
-        local mode = vim.api.nvim_get_mode().mode
-        local vis_start = vim.fn.getpos(".")
-        local vis_end = vim.fn.getpos("v")
-        if mode == "v" then
-            local selected_region = vim.fn.getregionpos(vis_start, vis_end)
-            local selected_text = vim.fn.getregion(vis_start, vis_end)
-            return {
-                reg = selected_region,
-                text = selected_text,
-            }
-        elseif mode == "V" then
-            if vis_start[2] > vis_end[2] then
-                local tmp = vis_start
-                vis_start = vis_end
-                vis_end = tmp
-            end
-            local lines = vim.api.nvim_buf_get_lines(0, vis_start[2] - 1, vis_end[2], true)
-            vis_start = {vis_start[1], vis_start[2], 1, vis_start[4]}
-            vis_end = {vis_end[1], vis_end[2], lines[#lines]:len(), vis_end[4]}
-            local selected_region = vim.fn.getregionpos(vis_start, vis_end)
-            return {
-                reg = selected_region,
-                text = lines,
-            }
-        else
-            vim.notify("Error: plugin only works in visual or visual-line mode for now.", 4)
-            return nil
-        end
-    end
-    return nil
-end
+---@alias OpFuncMotion "line" | "char" | "block"
+---@alias Region [integer, integer, integer, integer]
+---@alias Selection {reg: Region, text: string[]}
 
 ---Get selected text from opfunc
----@param motion_type "char" | "line" | "block" | nil
+---@param motion_type OpFuncMotion
 ---@return {reg: [[number, number, number, number], [number, number, number, number]][], text: string[]} | nil
 function m.get_opfunc_selection(motion_type)
     local sel_start = vim.fn.getpos("'[")
@@ -73,6 +39,32 @@ function m.get_opfunc_selection(motion_type)
     else
         vim.notify("Error: unknown opfunc motion_type: ".. vim.inspect(motion_type) ..".", 4)
         return nil
+    end
+end
+
+---@param new_lines string[]
+---@param selection Selection
+---@param motion_type OpFuncMotion
+function m.apply_changes(new_lines, selection, motion_type)
+    local buf = 0-- selection.reg[1][1][1] - 1
+    if motion_type == "block" then
+        for i, subreg in ipairs(selection.reg) do
+            local start_row = subreg[1][2] - 1
+            local start_col = subreg[1][3] - 1
+            local end_row = subreg[2][2] - 1
+            local end_col = subreg[2][3]
+            vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, {new_lines[i]})
+        end
+        local start_row = selection.reg[1][1][2] - 1
+        local start_col = selection.reg[1][1][3] - 1
+        vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col})
+    else
+        local start_row = selection.reg[1][1][2] - 1
+        local start_col = selection.reg[1][1][3] - 1
+        local end_row = selection.reg[#selection.reg][2][2] - 1
+        local end_col = selection.reg[#selection.reg][2][3]
+        vim.api.nvim_buf_set_text(buf, start_row, start_col, end_row, end_col, new_lines)
+        vim.api.nvim_win_set_cursor(0, {start_row + 1, start_col})
     end
 end
 
@@ -111,12 +103,44 @@ end
 ---@param s string
 ---@return string
 function string.to_hex(s)
+    local fmt_str = vim.g.hexfmt_casing == "upper" and "%02X" or "%02x"
     local s_len = s:len()
     local hex_str = ""
     for i=1, s_len do
-        hex_str = hex_str .. string.format("%02x", s:byte(i, i+1))
+        hex_str = hex_str .. string.format(fmt_str, s:byte(i, i+1))
     end
     return hex_str
+end
+
+---Generates the function that binds and invokes the opfunc for an `expr=true` mapping
+---@param func string
+---@param linewise boolean
+---@return function
+local function to_opfunc(func, linewise)
+    return function()
+        vim.o.opfunc = "v:lua.require'hexfmt'."..func
+        return "g@" .. (linewise and "_" or "")
+    end
+end
+
+---***TODO:*** retrieve func name from symbol instead of passing a string (i.e. pass func as a function)
+---@param bind string | nil
+---@param plug_bind string
+---@param func string
+---@param desc string
+---@param linewise boolean
+function m.setup_opfunc_bind(bind, plug_bind, func, desc, linewise)
+    plug_bind = "<plug>(" .. plug_bind .. ")"
+    vim.keymap.set({"n", "x"}, bind or plug_bind , to_opfunc(func, false), {desc=desc, silent=true, expr=true})
+
+    if linewise then
+        vim.keymap.set(
+            "n",
+            bind and bind .. "<leader>" or plug_bind:sub(0, -2) .. "Line)",
+            to_opfunc(func, true),
+            {desc=desc .. " (line-wise)", silent=true, expr=true}
+        )
+    end
 end
 
 return m
