@@ -1,7 +1,6 @@
 local m = {}
 
 ---Swaps endianness of an escaped hex string
----***TODO:*** fix '\x' padding when hexfmt_pad_incomplete_words is set to false
 ---@param s string
 ---@return string
 function m.swap_endianness_esc_line(s)
@@ -9,14 +8,15 @@ function m.swap_endianness_esc_line(s)
     local s_len = s:len()
     local swapped = ""
     if vim.g.hexfmt_pad_incomplete_words then
-        for _=1, s_len % (word_size * 4) do
+        for _=1, (word_size * 4) - s_len % (word_size * 4), 4 do
             s = s.."\\x00"
         end
+        s_len = s:len()
     end
 
     for i=1, s_len, 4 * word_size do
-        for j = 4*(word_size - 1), 0, -4 do
-            swapped = swapped.."\\x"..s:sub(i+j+2, i+j+3)
+        for j = math.min(i+4*word_size - 1, s_len), i, -4 do
+            swapped = swapped.."\\x"..s:sub(j-1, j)
         end
     end
 
